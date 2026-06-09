@@ -109,6 +109,16 @@ input[type=checkbox]{width:17px;height:17px;accent-color:var(--brand);cursor:poi
         <option value="has">has any email</option>
       </select>
     </div>
+    <div class="field">
+      <label>Profiles</label>
+      <select id="profilef">
+        <option value="">all</option>
+        <option value="linkedin">has LinkedIn</option>
+        <option value="x">has X</option>
+        <option value="either">has LinkedIn or X</option>
+        <option value="both">has both</option>
+      </select>
+    </div>
     <button class="btn sm" id="selVisible">Select shown</button>
     <button class="btn sm" id="deselVisible">Deselect shown</button>
     <button class="btn sm ghost" id="expandAll">Expand</button>
@@ -136,6 +146,16 @@ input[type=checkbox]{width:17px;height:17px;accent-color:var(--brand);cursor:poi
       <button class="btn primary" id="download">⬇ Download selected</button>
       <button class="btn" id="copy">Copy to clipboard</button>
       <button class="btn ghost" id="preview">Preview</button>
+      <div class="field">
+        <label>One field only</label>
+        <select id="onefield">
+          <option value="email">Emails</option>
+          <option value="linkedin">LinkedIn URLs</option>
+          <option value="x">X / Twitter</option>
+        </select>
+      </div>
+      <button class="btn" id="dlField">⬇ Download field</button>
+      <button class="btn ghost" id="copyField">Copy field</button>
     </div>
   </div>
 
@@ -154,7 +174,7 @@ const selected = new Set(ALLP.map(p=>p.id)); // all selected by default
 const collapsed = new Set();
 
 const $ = s=>document.querySelector(s);
-const list=$('#list'), q=$('#q'), countrySel=$('#country'), emailf=$('#emailf'), counter=$('#counter');
+const list=$('#list'), q=$('#q'), countrySel=$('#country'), emailf=$('#emailf'), profilef=$('#profilef'), counter=$('#counter');
 
 // populate country filter
 const countries=[...new Set(DATA.map(c=>c.country))].sort();
@@ -168,6 +188,11 @@ function matchPerson(c,p){
   if(ef==='verified' && p.emailConfidence!=='verified') return false;
   if(ef==='inferred' && p.emailConfidence!=='inferred') return false;
   if(ef==='has' && !p.email) return false;
+  const pf=profilef.value, hasLn=!!p.linkedin, hasX=!!(p.twitter||p.twitterRaw);
+  if(pf==='linkedin' && !hasLn) return false;
+  if(pf==='x' && !hasX) return false;
+  if(pf==='either' && !(hasLn||hasX)) return false;
+  if(pf==='both' && !(hasLn&&hasX)) return false;
   if(term){
     const hay=(p.name+' '+p.title+' '+c.company+' '+c.researched+' '+p.email).toLowerCase();
     if(!hay.includes(term)) return false;
@@ -262,7 +287,7 @@ list.addEventListener('click',e=>{
     el.classList.toggle('collapsed');
   }
 });
-[q,countrySel,emailf].forEach(el=>el.addEventListener('input',render));
+[q,countrySel,emailf,profilef].forEach(el=>el.addEventListener('input',render));
 $('#selVisible').onclick=()=>{visiblePeople().forEach(p=>selected.add(p.id));render();};
 $('#deselVisible').onclick=()=>{visiblePeople().forEach(p=>selected.delete(p.id));render();};
 $('#expandAll').onclick=()=>{collapsed.clear();render();};
@@ -369,6 +394,35 @@ $('#preview').onclick=()=>{
   w.document.write('<pre style="white-space:pre-wrap;font:13px/1.5 ui-monospace,Menlo,monospace;padding:24px;max-width:900px;margin:auto">'+
     currentText().replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]))+'</pre>');
   w.document.title='Preview';
+};
+
+/* ---------- one-field export (just emails / linkedin / x) ---------- */
+const FIELD_META={
+  email:{label:'Email', file:'emails', get:p=>p.email||''},
+  linkedin:{label:'LinkedIn', file:'linkedin', get:p=>p.linkedin||''},
+  x:{label:'X / Twitter', file:'x-handles', get:p=>p.twitter||p.twitterRaw||''},
+};
+function fieldDoc(people,f){
+  const meta=FIELD_META[f];
+  const cq=v=>{v=(v==null?'':String(v));return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
+  const rows=people.filter(p=>meta.get(p)).map(p=>[p.name,p.company,meta.get(p)].map(cq).join(','));
+  return {csv:`Name,Company,${meta.label}\n`+rows.join('\n'), n:rows.length, meta};
+}
+$('#dlField').onclick=()=>{
+  const ppl=selectedPeople();
+  if(!ppl.length){toast('Nothing selected');return;}
+  const f=$('#onefield').value, doc=fieldDoc(ppl,f);
+  if(!doc.n){toast(`No ${doc.meta.label} in selection`);return;}
+  dl(new Blob([doc.csv],{type:'text/csv;charset=utf-8'}),`technical-leaders-${doc.meta.file}.csv`);
+  toast(`Downloaded ${doc.n} ${doc.meta.label} rows`);
+};
+$('#copyField').onclick=async()=>{
+  const ppl=selectedPeople();
+  if(!ppl.length){toast('Nothing selected');return;}
+  const doc=fieldDoc(ppl,$('#onefield').value);
+  if(!doc.n){toast(`No ${doc.meta.label} in selection`);return;}
+  try{await navigator.clipboard.writeText(doc.csv);toast(`Copied ${doc.n} ${doc.meta.label} rows`);}
+  catch(e){toast('Clipboard blocked — use Download');}
 };
 
 /* ---------- minimal store-only ZIP (no deps) ---------- */
