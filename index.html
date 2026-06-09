@@ -297,7 +297,7 @@ $('#collapseAll').onclick=()=>{DATA.forEach(c=>collapsed.add(c.id));render();};
 function selectedPeople(){
   // keep DATA order, respect current filters AND selection
   const out=[];
-  DATA.forEach(c=>c.people.forEach(p=>{if(selected.has(p.id))out.push({...p,company:c.company,researched:c.researched,location:c.location,country:c.country});}));
+  DATA.forEach(c=>c.people.forEach(p=>{if(selected.has(p.id) && matchPerson(c,p))out.push({...p,company:c.company,researched:c.researched,location:c.location,country:c.country});}));
   return out;
 }
 function fname(s){return (s||'untitled').replace(/[\/\\:*?"<>|]+/g,'-').replace(/\s+/g,'_').slice(0,80);}
