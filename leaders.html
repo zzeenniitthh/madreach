@@ -400,13 +400,14 @@ $('#preview').onclick=()=>{
 const FIELD_META={
   email:{label:'Email', file:'emails', get:p=>p.email||''},
   linkedin:{label:'LinkedIn', file:'linkedin', get:p=>p.linkedin||''},
-  x:{label:'X / Twitter', file:'x-handles', get:p=>p.twitter||p.twitterRaw||''},
+  x:{label:'X', file:'x-handles', get:p=>twHandle(p)},
 };
 function fieldDoc(people,f){
   const meta=FIELD_META[f];
   const cq=v=>{v=(v==null?'':String(v));return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
-  const rows=people.filter(p=>meta.get(p)).map(p=>[p.name,p.company,meta.get(p)].map(cq).join(','));
-  return {csv:`Name,Company,${meta.label}\n`+rows.join('\n'), n:rows.length, meta};
+  // single column — just the chosen field, nothing else
+  const vals=people.map(p=>meta.get(p)).filter(Boolean);
+  return {csv:`${meta.label}\n`+vals.map(cq).join('\n'), n:vals.length, meta};
 }
 $('#dlField').onclick=()=>{
   const ppl=selectedPeople();
