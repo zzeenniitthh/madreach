@@ -53,6 +53,7 @@ input[type=text]{min-width:230px}
 .company.collapsed .caret{transform:rotate(-90deg)}
 .company.collapsed .people{display:none}
 .tagwarn{font-size:11px;color:var(--bad);background:var(--bad-bg);padding:2px 7px;border-radius:6px;margin-left:4px}
+.ftag{font-size:11px;font-weight:700;color:var(--brand);background:#eef1ff;border:1px solid #dfe4ff;padding:2px 9px;border-radius:999px;margin-left:8px;white-space:nowrap}
 .people{border-top:1px solid var(--line)}
 .person{display:grid;grid-template-columns:26px 1.4fr 1.7fr 1fr;gap:10px;align-items:center;
   padding:10px 14px;border-bottom:1px solid #f1f3f8}
@@ -99,6 +100,10 @@ input[type=checkbox]{width:17px;height:17px;accent-color:var(--brand);cursor:poi
     <div class="field">
       <label>Country</label>
       <select id="country"></select>
+    </div>
+    <div class="field">
+      <label>Field</label>
+      <select id="fieldf"></select>
     </div>
     <div class="field">
       <label>Email</label>
@@ -169,21 +174,51 @@ input[type=checkbox]{width:17px;height:17px;accent-color:var(--brand);cursor:poi
 const DATA = JSON.parse(document.getElementById('data').textContent);
 // assign ids
 DATA.forEach((c,ci)=>{c.id='c'+ci;c.people.forEach((p,pi)=>p.id='c'+ci+'p'+pi);});
+// field / industry per company (derived from company notes + public profiles)
+const COMPANY_FIELD={
+"Roboto AI":"Robotics","Teleo":"Robotics","Rose City Robotics":"Robotics","Surge AI":"Data Annotation",
+"Labelbox":"Data Annotation","Datasaur":"Data Annotation","Prunt.ai":"AI Software","Dextrous Robotics":"Robotics",
+"Foxglove":"Robotics","Wandelbots":"Robotics","Wayve":"Autonomous Driving","Mobius Labs":"Computer Vision",
+"Datagen":"Computer Vision","Robovise":"Other","Covariant":"Robotics","Voxel51":"Computer Vision",
+"Intrinsic":"Robotics","Tangram Vision":"Robotics","Osaro":"Robotics","Robust.AI":"Robotics",
+"Apple AIML (EgoDex)":"Data Collection","Pronto":"Other","Enchanted Tools":"Robotics","Photoneo":"Computer Vision",
+"Gestalt Robotics":"Robotics","Nnaisense":"AI Software","Accenture (AI data operations)":"BPO / Data Services",
+"Papercup":"AI Software","Robco":"Robotics","Rapid Robotics":"Robotics","Embodied AI / teleoperation startup":"Robotics",
+"Sanctuary AI":"Robotics","Kindred AI":"Robotics","Anolytics":"Data Annotation","DataAnnotation.tech":"Data Annotation",
+"iMerit":"Data Annotation","Playment":"Data Annotation","Quadrant Resource":"BPO / Data Services","MUJIN":"Robotics",
+"Preferred Networks":"AI Software","Cyberdyne":"Robotics","Naver Labs":"Robotics","Rainbow Robotics":"Robotics",
+"SenseTime":"AI Software","UBTECH Robotics":"Robotics","Fourier Intelligence":"Robotics","Unitree Robotics":"Robotics",
+"LEJU Robotics":"Robotics","CloudMinds":"Robotics","Horizon Robotics":"Autonomous Driving",
+"Beijing Humanoid Robot Innovation Center (Tiangong)":"Robotics","DataSource Intelligent":"Data Collection",
+"Shanghai AI Lab (OpenDriveLab)":"Autonomous Driving","Galbot (银河通用)":"Robotics","RoboSense":"Autonomous Driving",
+"Mech-Mind Robotics":"Robotics","DEEP Robotics":"Robotics","Lingchu Intelligence (灵初智能)":"Robotics",
+"XYZ Robotics":"Robotics","Dorabot":"Robotics","Wandercraft":"Robotics","Galaxy General Robot (银河通用)":"Robotics",
+"Youibot (优艾智合)":"Robotics","Dexforce":"Robotics","Humanoid Robot Innovation Center (HRIC)":"Robotics",
+"Robot data-collection operators":"Data Collection","Neurovia AI":"AI Software","G42":"AI Software",
+"Mercor":"Data Annotation","Appen":"Data Annotation","Lionbridge AI":"Data Annotation",
+"TELUS International AI":"BPO / Data Services","TaskUs":"BPO / Data Services","Sama":"Data Annotation",
+"Hive AI (thehive.ai)":"AI Software"
+};
+DATA.forEach(c=>{c.field=COMPANY_FIELD[c.company]||'Other';});
 const ALLP = DATA.flatMap(c=>c.people.map(p=>({...p, company:c.company, location:c.location, country:c.country, researched:c.researched})));
 const selected = new Set(ALLP.map(p=>p.id)); // all selected by default
 const collapsed = new Set();
 
 const $ = s=>document.querySelector(s);
-const list=$('#list'), q=$('#q'), countrySel=$('#country'), emailf=$('#emailf'), profilef=$('#profilef'), counter=$('#counter');
+const list=$('#list'), q=$('#q'), countrySel=$('#country'), emailf=$('#emailf'), profilef=$('#profilef'), fieldSel=$('#fieldf'), counter=$('#counter');
 
 // populate country filter
 const countries=[...new Set(DATA.map(c=>c.country))].sort();
 countrySel.innerHTML='<option value="">all countries</option>'+countries.map(c=>`<option>${c}</option>`).join('');
+// populate field / industry filter
+const fields=[...new Set(DATA.map(c=>c.field))].sort();
+fieldSel.innerHTML='<option value="">all fields</option>'+fields.map(f=>`<option>${f}</option>`).join('');
 
 function esc(s){return (s||'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
 function matchPerson(c,p){
   const term=q.value.trim().toLowerCase();
   if(countrySel.value && c.country!==countrySel.value) return false;
+  if(fieldSel.value && c.field!==fieldSel.value) return false;
   const ef=emailf.value;
   if(ef==='verified' && p.emailConfidence!=='verified') return false;
   if(ef==='inferred' && p.emailConfidence!=='inferred') return false;
@@ -224,6 +259,7 @@ function render(){
         <input type="checkbox" class="cbox" data-c="${c.id}">
         <span class="caret">▼</span>
         <span class="nm">${esc(c.company)}</span>
+        <span class="ftag">${esc(c.field)}</span>
         <span class="loc">· ${esc(c.location)}</span>${warn}
         <span class="notetoggle" data-note="${c.id}">notes</span>
         <span class="cnt">${ppl.length} shown</span>
@@ -287,7 +323,7 @@ list.addEventListener('click',e=>{
     el.classList.toggle('collapsed');
   }
 });
-[q,countrySel,emailf,profilef].forEach(el=>el.addEventListener('input',render));
+[q,countrySel,emailf,profilef,fieldSel].forEach(el=>el.addEventListener('input',render));
 $('#selVisible').onclick=()=>{visiblePeople().forEach(p=>selected.add(p.id));render();};
 $('#deselVisible').onclick=()=>{visiblePeople().forEach(p=>selected.delete(p.id));render();};
 $('#expandAll').onclick=()=>{collapsed.clear();render();};
