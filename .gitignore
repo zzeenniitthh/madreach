@@ -1,0 +1,12 @@
+# Dependencies
+node_modules/
+
+# Build / render output (large media, not needed for the static page)
+out/
+
+# OS files
+.DS_Store
+**/.DS_Store
+
+# Logs
+*.log
