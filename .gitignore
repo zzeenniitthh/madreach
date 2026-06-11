@@ -25,3 +25,4 @@ updates.json
 batch_finds.json
 robotics_gaps.json
 missing_both.json
+delete_companies.py
