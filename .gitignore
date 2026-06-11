@@ -22,3 +22,6 @@ priority.json
 wf_harvest.json
 new_finds.json
 updates.json
+batch_finds.json
+robotics_gaps.json
+missing_both.json
