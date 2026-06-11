@@ -1,0 +1,13 @@
+# The deployed site is just index.html + vercel.json.
+# Keep large/scratch source data out of the upload (Vercel has a 100 MB/file limit).
+israel_tech_data/
+enrich_batches/
+enrich_input.json
+companies.csv
+companies_full.tsv
+companies_raw.tsv
+companies_enriched_partial.csv
+build_data.py
+*.bak
+node_modules/
+.git/
