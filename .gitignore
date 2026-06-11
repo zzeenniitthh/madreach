@@ -5,3 +5,12 @@
 # Logs
 *.log
 .vercel
+
+# Scratch / oversized source data not needed by the deployed site
+israel_tech_data/
+enrich_batches/
+enrich_input.json
+companies.csv
+companies_full.tsv
+companies_raw.tsv
+index.html.bak
