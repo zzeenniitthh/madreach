@@ -14,3 +14,11 @@ companies.csv
 companies_full.tsv
 companies_raw.tsv
 index.html.bak
+
+# research scratch files
+gaps_worklist.json
+missing_both.json
+priority.json
+wf_harvest.json
+new_finds.json
+updates.json
